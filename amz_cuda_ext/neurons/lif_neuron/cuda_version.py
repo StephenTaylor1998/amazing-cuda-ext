@@ -15,7 +15,7 @@ try:
     extension = load('cuda_extension', [
         os.path.join(src_dir, 'operator_lif.cpp'),
         os.path.join(src_dir, 'kernel_lif.cu'),
-    ], build_directory=src_dir, verbose=True)
+    ], build_directory=src_dir, verbose=False)
 
     lif_tbn_forward = extension.lif_tbn_forward
     lif_btn_forward = extension.lif_btn_forward

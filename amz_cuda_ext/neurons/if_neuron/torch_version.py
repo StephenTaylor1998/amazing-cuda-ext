@@ -19,39 +19,37 @@ class zif_torch(torch.autograd.Function):
         return grad, None
 
 
-class LIF_TBN_Torch(nn.Module):
-    def __init__(self, thresh=1.0, tau=0.25, gamma=1.0):
-        super(LIF_TBN_Torch, self).__init__()
+class IF_TBN_Torch(nn.Module):
+    def __init__(self, thresh=1.0, gamma=1.0):
+        super(IF_TBN_Torch, self).__init__()
         self.heaviside = zif_torch.apply
         self.v_th = thresh
-        self.tau = tau
         self.gamma = gamma
 
     def forward(self, x):
         mem_v = []
         mem = 0.
         for t in range(x.shape[0]):
-            mem = self.tau * mem + x[t, ...]
-            spike = self.heaviside(mem - self.v_th, self.gamma)
+            mem = mem + x[t, ...]
+            spike = self.heaviside(mem - self.v_th, self.gamma) * 1.0
             mem = mem * (1. - spike)
             mem_v.append(spike)
         return torch.stack(mem_v)
 
 
-class LIF_BTN_Torch(nn.Module):
-    def __init__(self, thresh=1.0, tau=0.25, gamma=1.0):
-        super(LIF_BTN_Torch, self).__init__()
+class IF_BTN_Torch(nn.Module):
+    def __init__(self, thresh=1.0, gamma=1.0):
+        super(IF_BTN_Torch, self).__init__()
         self.heaviside = zif_torch.apply
         self.v_th = thresh
-        self.tau = tau
         self.gamma = gamma
 
     def forward(self, x):
         mem_v = []
         mem = 0.
         for t in range(x.shape[1]):
-            mem = self.tau * mem + x[:, t, ...]
-            spike = self.heaviside(mem - self.v_th, self.gamma)
+            mem = mem + x[:, t, ...]
+            spike = self.heaviside(mem - self.v_th, self.gamma) * 1.0
             mem = mem * (1. - spike)
             mem_v.append(spike)
         return torch.stack(mem_v, dim=1)

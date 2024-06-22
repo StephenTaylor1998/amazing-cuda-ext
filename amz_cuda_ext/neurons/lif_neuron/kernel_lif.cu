@@ -1,39 +1,39 @@
 #include <torch/extension.h>
 #include <vector>
 
-__global__ void lif_tbn_forward_kernel(int T, int BN, const float* x, const float tau, const float v_th,
-                                   const float alpha, float* y, float* m) {
+__global__ void lif_tbn_forward_kernel(int T, int BN, const float *x, const float tau, const float v_th,
+                                       const float alpha, float *y, float *m) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     float v = 0.0f;
     if (idx < BN) {
-        for(int t = 0; t < T; t++){
+        for (int t = 0; t < T; t++) {
             m[idx + t * BN] = v * tau + x[idx + t * BN];
-            y[idx + t * BN] = (m[idx + t * BN] - v_th) >= 0.0f ? 1.0f: 0.0f;
+            y[idx + t * BN] = (m[idx + t * BN] - v_th) >= 0.0f ? 1.0f : 0.0f;
             v = m[idx + t * BN] * (1 - y[idx + t * BN]);
         }
     }
 }
 
-__global__ void lif_btn_forward_kernel(int numel, int T, int N, const float* x, const float tau, const float v_th,
-                                   const float alpha, float* y, float* m) {
+__global__ void lif_btn_forward_kernel(int numel, int T, int N, const float *x, const float tau, const float v_th,
+                                       const float alpha, float *y, float *m) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= numel) return;
     float v = 0.0f;
     if ((idx % (N * T)) < N) {
-        for(int t = 0; t < T; t++){
+        for (int t = 0; t < T; t++) {
             m[idx + t * N] = v * tau + x[idx + t * N];
-            y[idx + t * N] = (m[idx + t * N] - v_th) >= 0.0f ? 1.0f: 0.0f;
+            y[idx + t * N] = (m[idx + t * N] - v_th) >= 0.0f ? 1.0f : 0.0f;
             v = m[idx + t * N] * (1 - y[idx + t * N]);
         }
     }
 }
 
-__global__ void lif_tbn_backward_kernel(int T, int BN, const float* grad_y, const float* y, const float* m,
-                                   const float tau, const float v_th, const float alpha, float* grad_x) {
+__global__ void lif_tbn_backward_kernel(int T, int BN, const float *grad_y, const float *y, const float *m,
+                                        const float tau, const float v_th, const float alpha, float *grad_x) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     float grad_v = 0.0f;
     if (idx < BN) {
-        for(int t = T - 1; t >= 0 ; t--){
+        for (int t = T - 1; t >= 0; t--) {
             float grad_sg_1 = (alpha - abs(m[idx + t * BN] - v_th));
             float clamp = grad_sg_1 < 0.0f ? 0.0f : grad_sg_1;
             float grad_sg = clamp * (1. / alpha) * (1. / alpha);
@@ -44,13 +44,13 @@ __global__ void lif_tbn_backward_kernel(int T, int BN, const float* grad_y, cons
     }
 }
 
-__global__ void lif_btn_backward_kernel(int numel, int T, int N, const float* grad_y, const float* y, const float* m,
-                                   const float tau, const float v_th, const float alpha, float* grad_x) {
+__global__ void lif_btn_backward_kernel(int numel, int T, int N, const float *grad_y, const float *y, const float *m,
+                                        const float tau, const float v_th, const float alpha, float *grad_x) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= numel) return;
     float grad_v = 0.0f;
     if ((idx % (N * T)) < N) {
-        for(int t = T - 1; t >= 0 ; t--){
+        for (int t = T - 1; t >= 0; t--) {
             float grad_sg_1 = (alpha - abs(m[idx + t * N] - v_th));
             float clamp = grad_sg_1 < 0.0f ? 0.0f : grad_sg_1;
             float grad_sg = clamp * (1. / alpha) * (1. / alpha);
@@ -61,7 +61,7 @@ __global__ void lif_btn_backward_kernel(int numel, int T, int N, const float* gr
     }
 }
 
-std::vector<at::Tensor> lif_tbn_forward(const at::Tensor x, float tau, float v_th, float alpha) {
+std::vector <at::Tensor> lif_tbn_forward(const at::Tensor x, float tau, float v_th, float alpha) {
     TORCH_CHECK(x.dtype() == at::kFloat);
     TORCH_INTERNAL_ASSERT(x.is_contiguous());
     TORCH_INTERNAL_ASSERT(x.device().type() == at::DeviceType::CUDA);
@@ -74,14 +74,14 @@ std::vector<at::Tensor> lif_tbn_forward(const at::Tensor x, float tau, float v_t
     int BN = numel / T;
 
     lif_tbn_forward_kernel<<<numel / 256 + 1, 256>>>(T, BN, x.data_ptr<float>(), tau, v_th, alpha,
-                                                     y.data_ptr<float>(), m.data_ptr<float>());
+            y.data_ptr<float>(), m.data_ptr<float>());
 //    lif_btn_forward_kernel<<<numel / 256 + 1, 256>>>(numel, T, BN, x.data_ptr<float>(), tau, v_th, alpha,
 //                                                     y.data_ptr<float>(), m.data_ptr<float>());
 
     return {m, y};
 }
 
-std::vector<at::Tensor> lif_btn_forward(const at::Tensor x, float tau, float v_th, float alpha) {
+std::vector <at::Tensor> lif_btn_forward(const at::Tensor x, float tau, float v_th, float alpha) {
     TORCH_CHECK(x.dtype() == at::kFloat);
     TORCH_INTERNAL_ASSERT(x.is_contiguous());
     TORCH_INTERNAL_ASSERT(x.device().type() == at::DeviceType::CUDA);
@@ -95,13 +95,13 @@ std::vector<at::Tensor> lif_btn_forward(const at::Tensor x, float tau, float v_t
     int N = numel / (B * T);
 
     lif_btn_forward_kernel<<<numel / 256 + 1, 256>>>(numel, T, N, x.data_ptr<float>(), tau, v_th, alpha,
-                                                     y.data_ptr<float>(), m.data_ptr<float>());
+            y.data_ptr<float>(), m.data_ptr<float>());
 
     return {m, y};
 }
 
-std::vector<at::Tensor> lif_tbn_backward(const at::Tensor grad_y, const at::Tensor m, const at::Tensor y,
-                                     float tau, float v_th, float alpha) {
+std::vector <at::Tensor> lif_tbn_backward(const at::Tensor grad_y, const at::Tensor m, const at::Tensor y,
+                                          float tau, float v_th, float alpha) {
     TORCH_CHECK(grad_y.dtype() == at::kFloat);
     TORCH_INTERNAL_ASSERT(grad_y.is_contiguous());
     TORCH_INTERNAL_ASSERT(grad_y.device().type() == at::DeviceType::CUDA);
@@ -121,15 +121,15 @@ std::vector<at::Tensor> lif_tbn_backward(const at::Tensor grad_y, const at::Tens
     int BN = numel / T;
 
     lif_tbn_backward_kernel<<<numel / 256 + 1, 256>>>(T, BN, grad_y.data_ptr<float>(), y.data_ptr<float>(),
-                                                      m.data_ptr<float>(), tau, v_th, alpha, grad_x.data_ptr<float>());
+            m.data_ptr<float>(), tau, v_th, alpha, grad_x.data_ptr<float>());
 //    lif_btn_backward_kernel<<<numel / 256 + 1, 256>>>(numel, T, BN, grad_y.data_ptr<float>(), y.data_ptr<float>(),
 //                                                      m.data_ptr<float>(), tau, v_th, alpha, grad_x.data_ptr<float>());
 
     return {grad_x};
 }
 
-std::vector<at::Tensor> lif_btn_backward(const at::Tensor grad_y, const at::Tensor m, const at::Tensor y,
-                                     float tau, float v_th, float alpha) {
+std::vector <at::Tensor> lif_btn_backward(const at::Tensor grad_y, const at::Tensor m, const at::Tensor y,
+                                          float tau, float v_th, float alpha) {
     TORCH_CHECK(grad_y.dtype() == at::kFloat);
     TORCH_INTERNAL_ASSERT(grad_y.is_contiguous());
     TORCH_INTERNAL_ASSERT(grad_y.device().type() == at::DeviceType::CUDA);
@@ -150,7 +150,8 @@ std::vector<at::Tensor> lif_btn_backward(const at::Tensor grad_y, const at::Tens
     int N = numel / (B * T);
 
     lif_btn_backward_kernel<<<numel / 256 + 1, 256>>>(numel, T, N, grad_y.data_ptr<float>(), y.data_ptr<float>(),
-                                                  m.data_ptr<float>(), tau, v_th, alpha, grad_x.data_ptr<float>());
+            m.data_ptr<float>(), tau, v_th, alpha, grad_x.data_ptr<float>());
 
     return {grad_x};
 }
+
