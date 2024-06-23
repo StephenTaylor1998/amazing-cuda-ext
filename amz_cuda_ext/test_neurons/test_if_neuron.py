@@ -79,7 +79,7 @@ def test_if_speed(dtype=torch.float32, n_iter=50):
     def test_if_cuda(dtype=torch.float32, n_iter=50):
         T = 4
         B = 128
-        N = 512
+        N = 4096
         torch.manual_seed(2024)
 
         x = torch.rand((T, B, N), dtype=dtype)
@@ -107,7 +107,7 @@ def test_if_speed(dtype=torch.float32, n_iter=50):
     def test_if_torch(dtype=torch.float32, n_iter=50):
         T = 4
         B = 128
-        N = 512
+        N = 4096
         torch.manual_seed(2024)
 
         x = torch.rand((T, B, N), dtype=dtype)
@@ -141,7 +141,7 @@ def test_if_speed(dtype=torch.float32, n_iter=50):
             return
         T = 4
         B = 128
-        N = 512
+        N = 4096
         torch.manual_seed(2024)
 
         x = torch.rand((T, B, N), dtype=dtype)
@@ -156,18 +156,6 @@ def test_if_speed(dtype=torch.float32, n_iter=50):
             x_cuda.retain_grad()
             torch.mean((y_cuda - gt) ** 2).backward()
 
-        x = x.transpose(0, 1).contiguous()
-        gt = gt.transpose(0, 1).contiguous()
-        lif_btn_cuda = IFNode(backend='torch', step_mode='m')
-
-        for _ in tqdm(range(n_iter)):
-            reset_net(lif_tbn_cuda)
-            x_cuda = deepcopy(x).cuda()
-            x_cuda.requires_grad_()
-            y_cuda = lif_btn_cuda(x_cuda)
-            x_cuda.retain_grad()
-            torch.mean((y_cuda - gt) ** 2).backward()
-
     def test_if_spikingjelly_cupy(dtype=torch.float32, n_iter=50):
         try:
             from spikingjelly.activation_based.neuron import IFNode
@@ -177,7 +165,7 @@ def test_if_speed(dtype=torch.float32, n_iter=50):
             return
         T = 4
         B = 128
-        N = 512
+        N = 4096
         torch.manual_seed(2024)
 
         x = torch.rand((T, B, N), dtype=dtype)
@@ -189,18 +177,6 @@ def test_if_speed(dtype=torch.float32, n_iter=50):
             x_cuda = deepcopy(x).cuda()
             x_cuda.requires_grad_()
             y_cuda = lif_tbn_cuda(x_cuda)
-            x_cuda.retain_grad()
-            torch.mean((y_cuda - gt) ** 2).backward()
-
-        x = x.transpose(0, 1).contiguous()
-        gt = gt.transpose(0, 1).contiguous()
-        lif_btn_cuda = IFNode(backend='cupy', step_mode='m')
-
-        for _ in tqdm(range(n_iter)):
-            reset_net(lif_btn_cuda)
-            x_cuda = deepcopy(x).cuda()
-            x_cuda.requires_grad_()
-            y_cuda = lif_btn_cuda(x_cuda)
             x_cuda.retain_grad()
             torch.mean((y_cuda - gt) ** 2).backward()
 

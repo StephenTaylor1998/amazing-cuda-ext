@@ -90,5 +90,5 @@ class LIF(nn.Module):
         self.alpha = alpha
 
     def forward(self, x):
-        y = self.lif_fun(x, self.tau, self.v_th, self.alpha) * 1.0
+        y = self.lif_fun(x, self.tau, self.v_th, self.alpha)
         return y

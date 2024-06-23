@@ -60,5 +60,5 @@ class IF(nn.Module):
         self.alpha = alpha
 
     def forward(self, x):
-        y = self.if_fun(x, self.v_th, self.alpha) * 1.0
+        y = self.if_fun(x, self.v_th, self.alpha)
         return y
