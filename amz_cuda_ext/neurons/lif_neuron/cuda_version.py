@@ -12,10 +12,14 @@ try:
     os.environ['MAX_JOBS'] = '8'
 
     src_dir = os.path.dirname(os.path.realpath(__file__))
-    extension = load('cuda_extension', [
-        os.path.join(src_dir, 'operator_lif.cpp'),
-        os.path.join(src_dir, 'kernel_lif.cu'),
-    ], build_directory=src_dir, verbose=False)
+    extension = load(
+        'cuda_extension',
+        [
+            os.path.join(src_dir, 'operator_lif.cpp'),
+            os.path.join(src_dir, 'kernel_lif.cu'),
+        ],
+        build_directory=src_dir,
+        verbose=False)
 
     lif_tbn_forward = extension.lif_tbn_forward
     lif_btn_forward = extension.lif_btn_forward
@@ -34,7 +38,7 @@ class lif_tbn(torch.autograd.Function):
     @staticmethod
     def forward(ctx, *args):
         x_seq, tau, v_th, alpha = args
-        m_seq, y_seq = lif_tbn_forward(x_seq, tau, v_th, alpha)
+        m_seq, y_seq = lif_tbn_forward(x_seq, tau, v_th)
         if x_seq.requires_grad:
             ctx.save_for_backward(m_seq, y_seq)
             ctx.tau = tau
@@ -55,7 +59,7 @@ class lif_btn(torch.autograd.Function):
     @staticmethod
     def forward(ctx, *args):
         x_seq, tau, v_th, alpha = args
-        m_seq, y_seq = lif_btn_forward(x_seq, tau, v_th, alpha)
+        m_seq, y_seq = lif_btn_forward(x_seq, tau, v_th)
         if x_seq.requires_grad:
             ctx.save_for_backward(m_seq, y_seq)
             ctx.tau = tau
@@ -72,27 +76,19 @@ class lif_btn(torch.autograd.Function):
         return grad_x, None, None, None
 
 
-class LIF_TBN(nn.Module):
-    def __init__(self, thresh=1.0, tau=0.5, alpha=1.0):
-        super(LIF_TBN, self).__init__()
-        self.lif_tbn = lif_tbn.apply
+class LIF(nn.Module):
+    def __init__(self, thresh=1.0, tau=0.5, alpha=1.0, dim_t=0):
+        super(LIF, self).__init__()
+        assert dim_t in [0, 1], \
+            '[amz_cuda_ext] The supported time dimensions are 0 and 1.'
+        if dim_t == 0:
+            self.lif_fun = lif_tbn.apply
+        else:
+            self.lif_fun = lif_btn.apply
         self.v_th = thresh
         self.tau = tau
         self.alpha = alpha
 
     def forward(self, x):
-        y = self.lif_tbn(x, self.tau, self.v_th, self.alpha) * 1.0
-        return y
-
-
-class LIF_BTN(nn.Module):
-    def __init__(self, thresh=1.0, tau=0.5, alpha=1.0):
-        super(LIF_BTN, self).__init__()
-        self.lif_btn = lif_btn.apply
-        self.v_th = thresh
-        self.tau = tau
-        self.alpha = alpha
-
-    def forward(self, x):
-        y = self.lif_btn(x, self.tau, self.v_th, self.alpha) * 1.0
+        y = self.lif_fun(x, self.tau, self.v_th, self.alpha) * 1.0
         return y

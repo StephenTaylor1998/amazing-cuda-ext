@@ -1,10 +1,13 @@
+//
+// Created by Hangchi Shen on 24-6-22.
+//
 #include <torch/extension.h>
 
 #include <vector>
 
-std::vector<at::Tensor> lif_tbn_forward(const at::Tensor x, float tau, float v_th, float alpha);
+std::vector<at::Tensor> lif_tbn_forward(const at::Tensor x, float tau, float v_th);
 
-std::vector<at::Tensor> lif_btn_forward(const at::Tensor x, float tau, float v_th, float alpha);
+std::vector<at::Tensor> lif_btn_forward(const at::Tensor x, float tau, float v_th);
 
 std::vector<at::Tensor> lif_tbn_backward(const at::Tensor grad_y, const at::Tensor m, const at::Tensor y,
                                          float tau, float v_th, float alpha);
