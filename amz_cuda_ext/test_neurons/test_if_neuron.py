@@ -79,57 +79,53 @@ def test_if_speed(dtype=torch.float32, n_iter=50):
     def test_if_cuda(dtype=torch.float32, n_iter=50):
         T = 4
         B = 128
-        N = 4096
+        N = 1024 * 16 * 16
         torch.manual_seed(2024)
 
         x = torch.rand((T, B, N), dtype=dtype)
         gt = torch.rand((T, B, N), dtype=dtype).cuda()
         lif_tbn_cuda = IF(dim_t=0)
 
+        x_cuda = deepcopy(x).cuda()
         for _ in tqdm(range(n_iter)):
-            x_cuda = deepcopy(x).cuda()
             x_cuda.requires_grad_()
             y_cuda = lif_tbn_cuda(x_cuda)
-            x_cuda.retain_grad()
             torch.mean((y_cuda - gt) ** 2).backward()
 
         x = x.transpose(0, 1).contiguous()
         gt = gt.transpose(0, 1).contiguous()
         lif_btn_cuda = IF(dim_t=1)
 
+        x_cuda = deepcopy(x).cuda()
         for _ in tqdm(range(n_iter)):
-            x_cuda = deepcopy(x).cuda()
             x_cuda.requires_grad_()
             y_cuda = lif_btn_cuda(x_cuda)
-            x_cuda.retain_grad()
             torch.mean((y_cuda - gt) ** 2).backward()
 
     def test_if_torch(dtype=torch.float32, n_iter=50):
         T = 4
         B = 128
-        N = 4096
+        N = 1024 * 16 * 16
         torch.manual_seed(2024)
 
         x = torch.rand((T, B, N), dtype=dtype)
         gt = torch.rand((T, B, N), dtype=dtype).cuda()
         lif_tbn_cuda = IF_TBN_Torch()
 
+        x_cuda = deepcopy(x).cuda()
         for _ in tqdm(range(n_iter)):
-            x_cuda = deepcopy(x).cuda()
             x_cuda.requires_grad_()
             y_cuda = lif_tbn_cuda(x_cuda)
-            x_cuda.retain_grad()
             torch.mean((y_cuda - gt) ** 2).backward()
 
         x = x.transpose(0, 1).contiguous()
         gt = gt.transpose(0, 1).contiguous()
         lif_btn_cuda = IF_BTN_Torch()
 
+        x_cuda = deepcopy(x).cuda()
         for _ in tqdm(range(n_iter)):
-            x_cuda = deepcopy(x).cuda()
             x_cuda.requires_grad_()
             y_cuda = lif_btn_cuda(x_cuda)
-            x_cuda.retain_grad()
             torch.mean((y_cuda - gt) ** 2).backward()
 
     def test_if_spikingjelly_torch(dtype=torch.float32, n_iter=50):
@@ -141,19 +137,18 @@ def test_if_speed(dtype=torch.float32, n_iter=50):
             return
         T = 4
         B = 128
-        N = 4096
+        N = 1024 * 16 * 16
         torch.manual_seed(2024)
 
         x = torch.rand((T, B, N), dtype=dtype)
         gt = torch.rand((T, B, N), dtype=dtype).cuda()
         lif_tbn_cuda = IFNode(backend='torch', step_mode='m')
 
+        x_cuda = deepcopy(x).cuda()
         for _ in tqdm(range(n_iter)):
             reset_net(lif_tbn_cuda)
-            x_cuda = deepcopy(x).cuda()
             x_cuda.requires_grad_()
             y_cuda = lif_tbn_cuda(x_cuda)
-            x_cuda.retain_grad()
             torch.mean((y_cuda - gt) ** 2).backward()
 
     def test_if_spikingjelly_cupy(dtype=torch.float32, n_iter=50):
@@ -165,19 +160,18 @@ def test_if_speed(dtype=torch.float32, n_iter=50):
             return
         T = 4
         B = 128
-        N = 4096
+        N = 1024 * 16 * 16
         torch.manual_seed(2024)
 
         x = torch.rand((T, B, N), dtype=dtype)
         gt = torch.rand((T, B, N), dtype=dtype).cuda()
         lif_tbn_cuda = IFNode(backend='cupy', step_mode='m')
 
+        x_cuda = deepcopy(x).cuda()
         for _ in tqdm(range(n_iter)):
             reset_net(lif_tbn_cuda)
-            x_cuda = deepcopy(x).cuda()
             x_cuda.requires_grad_()
             y_cuda = lif_tbn_cuda(x_cuda)
-            x_cuda.retain_grad()
             torch.mean((y_cuda - gt) ** 2).backward()
 
     print('================== torch ==================')

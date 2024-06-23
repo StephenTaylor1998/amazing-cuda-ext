@@ -10,13 +10,13 @@ if __name__ == '__main__':
     # test_lif_all()
 
     test_if_error(torch.float32)
-    test_if_speed(torch.float32, n_iter=1000)
+    test_if_speed(torch.float32, n_iter=100)
 
     test_if_error(torch.float16)
-    test_if_speed(torch.float16, n_iter=1000)
+    test_if_speed(torch.float16, n_iter=100)
 
     test_lif_error(torch.float32)
-    test_lif_speed(torch.float32, n_iter=1000)
-
+    test_lif_speed(torch.float32, n_iter=100)
+    #
     test_lif_error(torch.float16)
-    test_lif_speed(torch.float16, n_iter=1000)
+    test_lif_speed(torch.float16, n_iter=100)
