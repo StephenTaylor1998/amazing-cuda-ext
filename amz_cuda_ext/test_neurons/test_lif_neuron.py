@@ -79,7 +79,7 @@ def test_lif_speed(dtype=torch.float32, n_iter=50):
     def test_lif_cuda(dtype=torch.float32, n_iter=50):
         T = 4
         B = 128
-        N = 1024 * 16 * 16
+        N = 1024 * 8 * 8
         torch.manual_seed(2024)
 
         x = torch.rand((T, B, N), dtype=dtype)
@@ -87,6 +87,8 @@ def test_lif_speed(dtype=torch.float32, n_iter=50):
         lif_tbn_cuda = LIF(dim_t=0)
 
         x_cuda = deepcopy(x).cuda()
+        with torch.no_grad():
+            lif_tbn_cuda(x_cuda)
         for _ in tqdm(range(n_iter)):
             x_cuda.requires_grad_()
             y_cuda = lif_tbn_cuda(x_cuda)
@@ -97,6 +99,8 @@ def test_lif_speed(dtype=torch.float32, n_iter=50):
         lif_btn_cuda = LIF(dim_t=1)
 
         x_cuda = deepcopy(x).cuda()
+        with torch.no_grad():
+            lif_btn_cuda(x_cuda)
         for _ in tqdm(range(n_iter)):
             x_cuda.requires_grad_()
             y_cuda = lif_btn_cuda(x_cuda)
@@ -105,7 +109,7 @@ def test_lif_speed(dtype=torch.float32, n_iter=50):
     def test_lif_torch(dtype=torch.float32, n_iter=50):
         T = 4
         B = 128
-        N = 1024 * 16 * 16
+        N = 1024 * 8 * 8
         torch.manual_seed(2024)
 
         x = torch.rand((T, B, N), dtype=dtype)
@@ -113,6 +117,8 @@ def test_lif_speed(dtype=torch.float32, n_iter=50):
         lif_tbn_cuda = LIF_TBN_Torch()
 
         x_cuda = deepcopy(x).cuda()
+        with torch.no_grad():
+            lif_tbn_cuda(x_cuda)
         for _ in tqdm(range(n_iter)):
             x_cuda.requires_grad_()
             y_cuda = lif_tbn_cuda(x_cuda)
@@ -137,7 +143,7 @@ def test_lif_speed(dtype=torch.float32, n_iter=50):
             return
         T = 4
         B = 128
-        N = 1024 * 16 * 16
+        N = 1024 * 8 * 8
         torch.manual_seed(2024)
 
         x = torch.rand((T, B, N), dtype=dtype)
@@ -145,6 +151,8 @@ def test_lif_speed(dtype=torch.float32, n_iter=50):
         lif_tbn_cuda = LIFNode(backend='torch', step_mode='m')
 
         x_cuda = deepcopy(x).cuda()
+        with torch.no_grad():
+            lif_tbn_cuda(x_cuda)
         for _ in tqdm(range(n_iter)):
             reset_net(lif_tbn_cuda)
             x_cuda.requires_grad_()
@@ -160,7 +168,7 @@ def test_lif_speed(dtype=torch.float32, n_iter=50):
             return
         T = 4
         B = 128
-        N = 1024 * 16 * 16
+        N = 1024 * 8 * 8
         torch.manual_seed(2024)
 
         x = torch.rand((T, B, N), dtype=dtype)
@@ -168,6 +176,8 @@ def test_lif_speed(dtype=torch.float32, n_iter=50):
         lif_tbn_cuda = LIFNode(backend='cupy', step_mode='m')
 
         x_cuda = deepcopy(x).cuda()
+        with torch.no_grad():
+            lif_tbn_cuda(x_cuda)
         for _ in tqdm(range(n_iter)):
             reset_net(lif_tbn_cuda)
             x_cuda.requires_grad_()

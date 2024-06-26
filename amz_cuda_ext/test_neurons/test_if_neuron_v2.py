@@ -4,7 +4,7 @@ from copy import deepcopy
 import torch
 from tqdm import tqdm
 
-from neurons.if_neuron import IF, IF_TBN_Torch, IF_BTN_Torch
+from neurons.if_neuron_v2 import IF, IF_TBN_Torch, IF_BTN_Torch
 
 
 def test_if_all():
