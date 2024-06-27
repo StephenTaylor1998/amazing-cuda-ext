@@ -6,43 +6,32 @@
 #include <vector>
 
 template<typename scalar_t>
-__device__ __forceinline__ void heaviside(scalar_t &m, scalar_t v_th, scalar_t &y){
-    y = (m - v_th) >= (scalar_t) 0.0 ? (scalar_t) 1.0 : (scalar_t) 0.0;
-}
-
-template<>
-__device__ __forceinline__ void heaviside<float>(float &m, float v_th, float &y) {
-    y = (m - v_th) >= (float) 0.0 ? (float) 1.0 : (float) 0.0;
-}
-
-//template<>
-//__device__ __forceinline__ void heaviside<half>(half &m, half v_th, half &y) {
-//    y = (m - v_th) >= (half) 0.0 ? (half) 1.0 : (half) 0.0;
-//}
-
-template<>
-__device__ __forceinline__ void heaviside<double>(double &m, double v_th, double &y) {
-    y = (m - v_th) >= (double) 0.0 ? (double) 1.0 : (double) 0.0;
+__device__ __forceinline__ void heaviside(scalar_t &m, scalar_t v_th, scalar_t &y) {
+    y = ((m - v_th) >= (scalar_t) 0.0) ? (scalar_t) 1.0 : (scalar_t) 0.0;
 }
 
 template<typename scalar_t>
-__device__ __forceinline__ void mask(scalar_t &m, scalar_t &y, scalar_t &v){
-    v = m * (((scalar_t) 1.0) - y);
+__device__ __forceinline__ void reset_v(scalar_t &m, scalar_t &y, scalar_t &v) {
+    // v = m[idx + t * BN] * (1 - y[idx + t * BN]);
+    v = m * ((scalar_t) 1.0 - y);
+    // v = (y >= (scalar_t) 1.0) ? (scalar_t) 0.0 : m;
 }
 
-template<>
-__device__ __forceinline__ void mask<float>(float &m, float &y, float &v) {
-    v = m * (((float) 1.0) - y);
+template<typename scalar_t>
+__device__ __forceinline__ void clamp_min(scalar_t &x, scalar_t min_val) {
+    x = (x > min_val) ? x : min_val;
 }
 
-//template<>
-//__device__ __forceinline__ void mask<half>(half &m, half &y, half &v) {
-//    v = m * (((half) 1.0) - y);
-//}
+template<typename scalar_t>
+__device__ __forceinline__ void clamp_max(scalar_t &x, scalar_t max_val) {
+    x = (x < max_val) ? x : max_val;
+}
 
-template<>
-__device__ __forceinline__ void mask<double>(double &m, double &y, double &v) {
-    v = m * ((double) 1.0 - y);
+template<typename scalar_t>
+__device__ __forceinline__ void surrogate_grad(scalar_t m, scalar_t alpha, scalar_t v_th, scalar_t &grad_sg) {
+    scalar_t tmp = (alpha - abs(m - v_th));
+    clamp_min(tmp, (scalar_t) 0.0);
+    grad_sg = tmp * (1. / alpha) * (1. / alpha);
 }
 
 template<typename scalar_t>
@@ -53,10 +42,8 @@ __global__ void if_tbn_forward_kernel(
     if (idx < BN) {
         for (int t = 0; t < T; t++) {
             m[idx + t * BN] = v + x[idx + t * BN];
-            // y[idx + t * BN] = (m[idx + t * BN] - v_th) >= (float) 0.0 ? (float) 1.0 : (float) 0.0;
-            // v = m[idx + t * BN] * ((float) 1.0 - y[idx + t * BN]);
-            heaviside(m[idx + t * BN], v_th, y[idx + t * BN]);
-            mask(m[idx + t * BN], y[idx + t * BN], v);
+            heaviside<scalar_t>(m[idx + t * BN], v_th, y[idx + t * BN]);
+            reset_v<scalar_t>(m[idx + t * BN], y[idx + t * BN], v);
         }
     }
 }
@@ -83,9 +70,8 @@ __global__ void if_tbn_backward_kernel(int T, int BN, const scalar_t *grad_y, co
     scalar_t grad_v = 0.0;
     if (idx < BN) {
         for (int t = T - 1; t >= 0; t--) {
-            scalar_t grad_sg_1 = (alpha - abs(m[idx + t * BN] - v_th));
-            scalar_t clamp = grad_sg_1 < (scalar_t) 0.0 ? (scalar_t) 0.0 : grad_sg_1;
-            scalar_t grad_sg = clamp * (1. / alpha) * (1. / alpha);
+            scalar_t grad_sg;
+            surrogate_grad<scalar_t>(m[idx + t * BN], alpha, v_th, grad_sg);
             scalar_t grad_m =
                     grad_y[idx + t * BN] * grad_sg + grad_v * (1. - m[idx + t * BN] * grad_sg - y[idx + t * BN]);
             grad_x[idx + t * BN] = grad_m;
