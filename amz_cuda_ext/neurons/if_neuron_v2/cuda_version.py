@@ -20,7 +20,8 @@ try:
         ],
         build_directory=src_dir,
         verbose=False,
-        # extra_cflags={'cxx': ['-O2'], 'nvcc': ['-O3']},
+        extra_cflags=['-O3'],
+        extra_cuda_cflags=["-O3", "-Xfatbin", "-compress-all"],
     )
 
     if_tbn_forward = extension.if_tbn_forward

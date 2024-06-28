@@ -19,7 +19,10 @@ try:
             os.path.join(src_dir, 'kernel_lif.cu'),
         ],
         build_directory=src_dir,
-        verbose=False)
+        verbose=False,
+        extra_cflags=['-O3'],
+        extra_cuda_cflags=["-O3", "-Xfatbin", "-compress-all"],
+    )
 
     lif_tbn_forward = extension.lif_tbn_forward
     lif_btn_forward = extension.lif_btn_forward
