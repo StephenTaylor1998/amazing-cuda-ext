@@ -83,7 +83,7 @@ class LIF(nn.Module):
     def __init__(self, thresh=1.0, tau=0.5, alpha=1.0, dim_t=0):
         super(LIF, self).__init__()
         assert dim_t in [0, 1], \
-            '[amz_cuda_ext] The supported time dimensions are 0 and 1.'
+            '[amz_ext] The supported time dimensions are 0 and 1.'
         if dim_t == 0:
             self.lif_fun = lif_tbn.apply
         else:

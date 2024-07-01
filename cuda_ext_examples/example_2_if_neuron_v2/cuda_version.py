@@ -81,7 +81,7 @@ class IF(nn.Module):
     def __init__(self, thresh=1.0, alpha=1.0, dim_t=0):
         super(IF, self).__init__()
         assert dim_t in [0, 1], \
-            '[amz_cuda_ext] The supported time dimensions are 0 and 1.'
+            '[amz_ext] The supported time dimensions are 0 and 1.'
         if dim_t == 0:
             self.if_fun = if_tbn.apply
         else:
