@@ -4,7 +4,7 @@ from copy import deepcopy
 import torch
 from tqdm import tqdm
 
-from neurons.if_neuron import IF, IF_TBN_Torch, IF_BTN_Torch
+from neurons import IF, IF_TBN_Torch, IF_BTN_Torch
 
 
 def test_if_all():
@@ -16,7 +16,7 @@ def test_if_all():
 
 
 def test_if_error(dtype=torch.float32):
-    print(f'\n[amz_cuda_ext] [IF] [data_type {dtype}]')
+    print(f'\n[amz_ext] [IF] [data_type {dtype}]')
     T = 512
     B = 512
     N = 512
@@ -74,7 +74,7 @@ def test_if_error(dtype=torch.float32):
 
 
 def test_if_speed(dtype=torch.float32, n_iter=50):
-    print(f'\n[amz_cuda_ext] [IF] [data_type {dtype}]')
+    print(f'\n[amz_ext] [IF] [data_type {dtype}]')
 
     def test_if_cuda(dtype=torch.float32, n_iter=50):
         T = 4
@@ -190,7 +190,7 @@ def test_if_speed(dtype=torch.float32, n_iter=50):
     # [RTX4090] [TBN] [6600MB] [36s]
     # [RTX4090] [BTN] [6600MB] [59s]
     test_if_torch(dtype, n_iter)
-    print('=============== amz_cuda_ext ==============')
+    print('=============== amz_ext ==============')
     # [RTX4090] [TBN] [3018MB] [3s]
     # [RTX4090] [BTN] [3018MB] [3s]
     test_if_cuda(dtype, n_iter)
