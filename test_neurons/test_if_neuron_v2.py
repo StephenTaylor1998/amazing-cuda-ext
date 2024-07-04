@@ -75,122 +75,11 @@ def test_if_error(dtype=torch.float32):
 
 def test_if_speed(dtype=torch.float32, n_iter=50):
     print(f'\n[amz_ext] [IF] [data_type {dtype}]')
-
-    def test_if_cuda(dtype=torch.float32, n_iter=50):
-        T = 4
-        B = 128
-        N = 1024 * 8 * 8
-        torch.manual_seed(2024)
-
-        x = torch.rand((T, B, N), dtype=dtype)
-        gt = torch.rand((T, B, N), dtype=dtype).cuda()
-        lif_tbn_cuda = IF(dim_t=0)
-
-        x_cuda = deepcopy(x).cuda()
-        with torch.no_grad():
-            lif_tbn_cuda(x_cuda)
-        for _ in tqdm(range(n_iter)):
-            x_cuda.requires_grad_()
-            y_cuda = lif_tbn_cuda(x_cuda)
-            torch.mean((y_cuda - gt) ** 2).backward()
-
-        x = x.transpose(0, 1).contiguous()
-        gt = gt.transpose(0, 1).contiguous()
-        lif_btn_cuda = IF(dim_t=1)
-
-        x_cuda = deepcopy(x).cuda()
-        with torch.no_grad():
-            lif_btn_cuda(x_cuda)
-        for _ in tqdm(range(n_iter)):
-            x_cuda.requires_grad_()
-            y_cuda = lif_btn_cuda(x_cuda)
-            torch.mean((y_cuda - gt) ** 2).backward()
-
-    def test_if_torch(dtype=torch.float32, n_iter=50):
-        T = 4
-        B = 128
-        N = 1024 * 8 * 8
-        torch.manual_seed(2024)
-
-        x = torch.rand((T, B, N), dtype=dtype)
-        gt = torch.rand((T, B, N), dtype=dtype).cuda()
-        lif_tbn_cuda = IF_TBN_Torch()
-
-        x_cuda = deepcopy(x).cuda()
-        with torch.no_grad():
-            lif_tbn_cuda(x_cuda)
-        for _ in tqdm(range(n_iter)):
-            x_cuda.requires_grad_()
-            y_cuda = lif_tbn_cuda(x_cuda)
-            torch.mean((y_cuda - gt) ** 2).backward()
-
-        x = x.transpose(0, 1).contiguous()
-        gt = gt.transpose(0, 1).contiguous()
-        lif_btn_cuda = IF_BTN_Torch()
-
-        x_cuda = deepcopy(x).cuda()
-        with torch.no_grad():
-            lif_btn_cuda(x_cuda)
-        for _ in tqdm(range(n_iter)):
-            x_cuda.requires_grad_()
-            y_cuda = lif_btn_cuda(x_cuda)
-            torch.mean((y_cuda - gt) ** 2).backward()
-
-    def test_if_spikingjelly_torch(dtype=torch.float32, n_iter=50):
-        try:
-            from spikingjelly.activation_based.neuron import IFNode
-            from spikingjelly.activation_based.functional import reset_net
-        except ImportWarning:
-            warnings.warn("[INFO] Unable to load cuda extensions.")
-            return
-        T = 4
-        B = 128
-        N = 1024 * 8 * 8
-        torch.manual_seed(2024)
-
-        x = torch.rand((T, B, N), dtype=dtype)
-        gt = torch.rand((T, B, N), dtype=dtype).cuda()
-        lif_tbn_cuda = IFNode(backend='torch', step_mode='m')
-
-        x_cuda = deepcopy(x).cuda()
-        with torch.no_grad():
-            lif_tbn_cuda(x_cuda)
-        for _ in tqdm(range(n_iter)):
-            reset_net(lif_tbn_cuda)
-            x_cuda.requires_grad_()
-            y_cuda = lif_tbn_cuda(x_cuda)
-            torch.mean((y_cuda - gt) ** 2).backward()
-
-    def test_if_spikingjelly_cupy(dtype=torch.float32, n_iter=50):
-        try:
-            from spikingjelly.activation_based.neuron import IFNode
-            from spikingjelly.activation_based.functional import reset_net
-        except ImportWarning:
-            warnings.warn("[INFO] Unable to load cuda extensions.")
-            return
-        T = 4
-        B = 128
-        N = 1024 * 8 * 8
-        torch.manual_seed(2024)
-
-        x = torch.rand((T, B, N), dtype=dtype)
-        gt = torch.rand((T, B, N), dtype=dtype).cuda()
-        lif_tbn_cuda = IFNode(backend='cupy', step_mode='m')
-
-        x_cuda = deepcopy(x).cuda()
-        with torch.no_grad():
-            lif_tbn_cuda(x_cuda)
-        for _ in tqdm(range(n_iter)):
-            reset_net(lif_tbn_cuda)
-            x_cuda.requires_grad_()
-            y_cuda = lif_tbn_cuda(x_cuda)
-            torch.mean((y_cuda - gt) ** 2).backward()
-
     print('================== torch ==================')
     # [RTX4090] [TBN] [6600MB] [36s]
     # [RTX4090] [BTN] [6600MB] [59s]
     test_if_torch(dtype, n_iter)
-    print('=============== amz_ext ==============')
+    print('================= amz_ext =================')
     # [RTX4090] [TBN] [3018MB] [3s]
     # [RTX4090] [BTN] [3018MB] [3s]
     test_if_cuda(dtype, n_iter)
@@ -202,3 +91,105 @@ def test_if_speed(dtype=torch.float32, n_iter=50):
     # [RTX4090] [TBN] [4048MB] [4s]
     # [RTX4090] [BTN] [4306MB] [4s]
     test_if_spikingjelly_cupy(dtype, n_iter)
+
+
+def test_if_cuda(dtype=torch.float32, n_iter=50, T=4, B=128, N=1024 * 8 * 8):
+    torch.manual_seed(2024)
+
+    x = torch.rand((T, B, N), dtype=dtype)
+    gt = torch.rand((T, B, N), dtype=dtype).cuda()
+    lif_tbn_cuda = IF(dim_t=0)
+
+    x_cuda = deepcopy(x).cuda()
+    with torch.no_grad():
+        lif_tbn_cuda(x_cuda)
+    for _ in tqdm(range(n_iter)):
+        x_cuda.requires_grad_()
+        y_cuda = lif_tbn_cuda(x_cuda)
+        torch.mean((y_cuda - gt) ** 2).backward()
+
+    # x = x.transpose(0, 1).contiguous()
+    # gt = gt.transpose(0, 1).contiguous()
+    # lif_btn_cuda = IF(dim_t=1)
+    #
+    # x_cuda = deepcopy(x).cuda()
+    # with torch.no_grad():
+    #     lif_btn_cuda(x_cuda)
+    # for _ in tqdm(range(n_iter)):
+    #     x_cuda.requires_grad_()
+    #     y_cuda = lif_btn_cuda(x_cuda)
+    #     torch.mean((y_cuda - gt) ** 2).backward()
+
+
+def test_if_torch(dtype=torch.float32, n_iter=50, T=4, B=128, N=1024 * 8 * 8):
+    torch.manual_seed(2024)
+
+    x = torch.rand((T, B, N), dtype=dtype)
+    gt = torch.rand((T, B, N), dtype=dtype).cuda()
+    lif_tbn_cuda = IF_TBN_Torch()
+
+    x_cuda = deepcopy(x).cuda()
+    with torch.no_grad():
+        lif_tbn_cuda(x_cuda)
+    for _ in tqdm(range(n_iter)):
+        x_cuda.requires_grad_()
+        y_cuda = lif_tbn_cuda(x_cuda)
+        torch.mean((y_cuda - gt) ** 2).backward()
+
+    # x = x.transpose(0, 1).contiguous()
+    # gt = gt.transpose(0, 1).contiguous()
+    # lif_btn_cuda = IF_BTN_Torch()
+    #
+    # x_cuda = deepcopy(x).cuda()
+    # with torch.no_grad():
+    #     lif_btn_cuda(x_cuda)
+    # for _ in tqdm(range(n_iter)):
+    #     x_cuda.requires_grad_()
+    #     y_cuda = lif_btn_cuda(x_cuda)
+    #     torch.mean((y_cuda - gt) ** 2).backward()
+
+
+def test_if_spikingjelly_torch(dtype=torch.float32, n_iter=50, T=4, B=128, N=1024 * 8 * 8):
+    try:
+        from spikingjelly.activation_based.neuron import IFNode
+        from spikingjelly.activation_based.functional import reset_net
+    except ImportWarning:
+        warnings.warn("[INFO] Unable to load cuda extensions.")
+        return
+    torch.manual_seed(2024)
+
+    x = torch.rand((T, B, N), dtype=dtype)
+    gt = torch.rand((T, B, N), dtype=dtype).cuda()
+    lif_tbn_cuda = IFNode(backend='torch', step_mode='m')
+
+    x_cuda = deepcopy(x).cuda()
+    with torch.no_grad():
+        lif_tbn_cuda(x_cuda)
+    for _ in tqdm(range(n_iter)):
+        reset_net(lif_tbn_cuda)
+        x_cuda.requires_grad_()
+        y_cuda = lif_tbn_cuda(x_cuda)
+        torch.mean((y_cuda - gt) ** 2).backward()
+
+
+def test_if_spikingjelly_cupy(dtype=torch.float32, n_iter=50, T=4, B=128, N=1024 * 8 * 8):
+    try:
+        from spikingjelly.activation_based.neuron import IFNode
+        from spikingjelly.activation_based.functional import reset_net
+    except ImportWarning:
+        warnings.warn("[INFO] Unable to load cuda extensions.")
+        return
+    torch.manual_seed(2024)
+
+    x = torch.rand((T, B, N), dtype=dtype)
+    gt = torch.rand((T, B, N), dtype=dtype).cuda()
+    lif_tbn_cuda = IFNode(backend='cupy', step_mode='m')
+
+    x_cuda = deepcopy(x).cuda()
+    with torch.no_grad():
+        lif_tbn_cuda(x_cuda)
+    for _ in tqdm(range(n_iter)):
+        reset_net(lif_tbn_cuda)
+        x_cuda.requires_grad_()
+        y_cuda = lif_tbn_cuda(x_cuda)
+        torch.mean((y_cuda - gt) ** 2).backward()

@@ -9,7 +9,7 @@ class zif_torch(torch.autograd.Function):
         if x.requires_grad:
             ctx.save_for_backward(x)
             ctx.alpha = alpha
-        return (x > 0).float()
+        return (x >= 0).float()
 
     @staticmethod
     def backward(ctx, *args):
